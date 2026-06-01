@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concept Walkthrough — Packet Sniffer &amp; Protocol Analyzer</title>
+<style>
+  :root{
+    --bg:#0b0f17; --bg2:#0e1422; --surface:#141b2d; --surface2:#1a2336;
+    --border:#26314b; --text:#dce3f0; --muted:#90a0bd; --faint:#6b7a9c;
+    --accent:#46d8c5; --accent2:#7aa2ff; --amber:#f2b65a; --green:#5ad19a;
+    --code-bg:#080c14; --code-border:#1e2740; --radius:14px;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:radial-gradient(1200px 600px at 80% -10%,#16203a 0%,var(--bg) 55%) fixed;
+    color:var(--text); font-family:var(--sans); line-height:1.7; font-size:16.5px;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent2); text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{
+    font-family:var(--mono); font-size:.86em; background:#0c1322; color:#9fe7dd;
+    border:1px solid var(--code-border); border-radius:6px; padding:.08em .42em;
+  }
+  /* progress bar */
+  #progress{position:fixed; top:0; left:0; height:3px; width:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2)); z-index:50;
+    box-shadow:0 0 10px rgba(70,216,197,.6)}
+  /* layout */
+  .wrap{max-width:1180px; margin:0 auto; display:grid;
+    grid-template-columns:248px minmax(0,1fr); gap:40px; padding:0 28px}
+  /* sidebar */
+  aside{position:sticky; top:0; align-self:start; height:100vh; padding:28px 0;
+    overflow-y:auto}
+  .nav-title{font-size:.72rem; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--faint); margin:0 0 12px 12px}
+  nav a{display:block; color:var(--muted); padding:7px 12px; border-left:2px solid transparent;
+    font-size:.92rem; border-radius:0 8px 8px 0; transition:all .15s}
+  nav a:hover{color:var(--text); background:var(--surface); text-decoration:none}
+  nav a.active{color:var(--accent); border-left-color:var(--accent);
+    background:linear-gradient(90deg,rgba(70,216,197,.10),transparent)}
+  nav a .n{color:var(--faint); font-family:var(--mono); font-size:.78rem; margin-right:8px}
+  nav a.active .n{color:var(--accent)}
+  /* main */
+  main{padding:48px 0 120px; min-width:0}
+  .hero{margin-bottom:54px}
+  .kicker{display:inline-block; font-family:var(--mono); font-size:.74rem; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--accent); border:1px solid var(--border);
+    background:var(--surface); padding:5px 12px; border-radius:999px; margin-bottom:20px}
+  h1{font-size:2.5rem; line-height:1.15; margin:.1em 0 .35em; letter-spacing:-.01em}
+  h1 .sub{display:block; font-size:1.15rem; font-weight:500; color:var(--muted); margin-top:.5em; letter-spacing:0}
+  .lede{color:var(--muted); font-size:1.05rem; max-width:62ch}
+  .lede em{color:var(--accent); font-style:normal}
+  .hint{margin-top:22px; font-size:.9rem; color:var(--faint); border-top:1px dashed var(--border); padding-top:16px}
+  /* stage section */
+  section{scroll-margin-top:20px; margin-bottom:30px}
+  .stage{background:linear-gradient(180deg,var(--surface) 0%,var(--bg2) 100%);
+    border:1px solid var(--border); border-radius:var(--radius); padding:30px 32px 34px;
+    margin-bottom:34px; box-shadow:0 18px 40px -28px rgba(0,0,0,.8)}
+  .stage-head{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:6px}
+  .badge{font-family:var(--mono); font-size:.74rem; font-weight:600; letter-spacing:.06em;
+    color:#04232a; background:linear-gradient(120deg,var(--accent),#63e6d6);
+    padding:5px 11px; border-radius:8px; white-space:nowrap}
+  .badge.field{background:linear-gradient(120deg,var(--amber),#f7cf86); color:#3a2606}
+  h2{font-size:1.55rem; margin:0; letter-spacing:-.01em}
+  .meta{color:var(--muted); font-size:.92rem; margin:14px 0 0}
+  .goal{margin:14px 0 24px; padding:13px 16px; border-left:3px solid var(--accent2);
+    background:rgba(122,162,255,.07); border-radius:0 10px 10px 0; color:#cdd8f2}
+  .label{display:flex; align-items:center; gap:10px; font-size:.78rem; letter-spacing:.13em;
+    text-transform:uppercase; color:var(--faint); margin:28px 0 14px}
+  .label::after{content:""; flex:1; height:1px; background:var(--border)}
+  /* concepts */
+  ol.concepts{list-style:none; counter-reset:c; margin:0; padding:0}
+  ol.concepts>li{counter-increment:c; position:relative; padding:2px 0 2px 46px; margin-bottom:20px}
+  ol.concepts>li::before{content:counter(c); position:absolute; left:0; top:1px;
+    width:30px; height:30px; display:grid; place-items:center; font-family:var(--mono);
+    font-size:.85rem; font-weight:600; color:var(--accent); background:var(--surface2);
+    border:1px solid var(--border); border-radius:9px}
+  ol.concepts h4{margin:3px 0 6px; font-size:1.02rem; color:#fff}
+  ol.concepts p{margin:.3em 0; color:var(--text)}
+  ul.sub{margin:.5em 0; padding-left:1.1em}
+  ul.sub li{margin:.3em 0; color:var(--muted)}
+  ul.sub strong{color:var(--text)}
+  .note-list{padding-left:1.2em}
+  .note-list li{margin:.55em 0}
+  .note-list strong{color:#fff}
+  /* terminal code */
+  pre{margin:16px 0; background:var(--code-bg); border:1px solid var(--code-border);
+    border-radius:11px; overflow-x:auto; font-family:var(--mono); font-size:.84rem;
+    line-height:1.6}
+  pre .bar{display:flex; gap:7px; padding:10px 14px; border-bottom:1px solid var(--code-border)}
+  pre .bar i{width:11px; height:11px; border-radius:50%; display:inline-block}
+  pre .bar i:nth-child(1){background:#ff5f57} pre .bar i:nth-child(2){background:#febc2e}
+  pre .bar i:nth-child(3){background:#28c840}
+  pre code{display:block; background:none; border:none; padding:16px; color:#c8d4e8; white-space:pre}
+  pre code .c{color:#5f7088} /* comment */
+  pre code .k{color:var(--accent)} /* keyword/accent */
+  /* interview accordions */
+  .interview details{border:1px solid var(--border); border-radius:11px; margin:10px 0;
+    background:var(--surface2); overflow:hidden}
+  .interview details[open]{border-color:rgba(242,182,90,.45)}
+  .interview summary{cursor:pointer; padding:14px 18px 14px 48px; position:relative;
+    font-weight:500; color:#eef2fb; list-style:none}
+  .interview summary::-webkit-details-marker{display:none}
+  .interview summary::before{content:"Q"; position:absolute; left:16px; top:50%;
+    transform:translateY(-50%); width:22px; height:22px; display:grid; place-items:center;
+    font-family:var(--mono); font-size:.74rem; font-weight:700; color:#3a2606;
+    background:var(--amber); border-radius:6px}
+  .interview summary::after{content:"+"; position:absolute; right:18px; top:50%;
+    transform:translateY(-50%); color:var(--faint); font-size:1.2rem; font-family:var(--mono)}
+  .interview details[open] summary::after{content:"\2212"}
+  .interview .ans{padding:0 18px 16px 48px; color:var(--muted)}
+  .interview .ans::before{content:"A"; float:left; margin-left:-32px; width:22px; height:22px;
+    display:grid; place-items:center; font-family:var(--mono); font-size:.74rem; font-weight:700;
+    color:#04232a; background:var(--green); border-radius:6px}
+  .quiz-hint{font-size:.85rem; color:var(--faint); margin:0 0 14px; font-style:italic}
+  /* field note callout */
+  .callout{border:1px solid var(--border); border-left:3px solid var(--amber);
+    background:rgba(242,182,90,.06); border-radius:0 11px 11px 0; padding:14px 18px; margin:18px 0; color:#e7d9bf}
+  .core{border-left-color:var(--accent); background:rgba(70,216,197,.07); color:#cdeee8}
+  .sub-note{margin-top:26px}
+  .sub-note h3{font-size:1.08rem; margin:0 0 8px; color:#fff}
+  footer{border-top:1px solid var(--border); margin-top:30px; padding-top:24px; color:var(--faint); font-size:.9rem}
+  footer a{color:var(--muted)}
+  .totop{position:fixed; right:22px; bottom:22px; width:44px; height:44px; border-radius:12px;
+    background:var(--surface); border:1px solid var(--border); color:var(--accent); display:grid;
+    place-items:center; font-size:1.1rem; opacity:0; pointer-events:none; transition:opacity .25s; z-index:40}
+  .totop.show{opacity:1; pointer-events:auto}
+  .totop:hover{background:var(--surface2); text-decoration:none}
+  @media (max-width:880px){
+    .wrap{grid-template-columns:1fr; gap:0}
+    aside{position:static; height:auto; padding:18px 0 0}
+    nav{display:flex; flex-wrap:wrap; gap:4px}
+    nav a{border-left:none; border:1px solid var(--border); border-radius:999px; padding:6px 12px; font-size:.82rem}
+    nav a.active{border-color:var(--accent)}
+    nav a .n{display:none}
+    main{padding-top:24px}
+    h1{font-size:2rem}
+    .stage{padding:24px 18px}
+    ol.concepts>li{padding-left:40px}
+  }
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div class="wrap">
+
+  <aside>
+    <p class="nav-title">Walkthrough</p>
+    <nav id="toc">
+      <a href="#top"><span class="n">··</span>Overview</a>
+      <a href="#stage-1"><span class="n">01</span>Capture Pipeline</a>
+      <a href="#stage-2"><span class="n">02</span>Ethernet (L2)</a>
+      <a href="#stage-3"><span class="n">03</span>IPv4 (L3)</a>
+      <a href="#stage-4"><span class="n">04</span>Transport (L4)</a>
+      <a href="#stage-5"><span class="n">05</span>Filter Engine</a>
+      <a href="#stage-6"><span class="n">06</span>Live Statistics</a>
+      <a href="#stage-7"><span class="n">07</span>Polish &amp; Stretch</a>
+      <a href="#field-notes"><span class="n">✦</span>Field Notes</a>
+    </nav>
+  </aside>
+
+  <main id="top">
+    <header class="hero">
+      <span class="kicker">Packet Sniffer · Concept Walkthrough</span>
+      <h1>From raw bytes to a protocol analyzer
+        <span class="sub">The networking &amp; C concepts behind every stage of the build.</span>
+      </h1>
+      <p class="lede">A running log of the concepts behind each stage — written so I can
+        <em>explain every line</em> in an interview, not just ship code. Each stage lists what
+        was built, the key ideas, and the questions a Cisco-style interviewer is likely to ask
+        (with answers).</p>
+      <p class="hint">Code lives in <code>src/</code>; the original spec is
+        <code>packet_sniffer_project.md</code>. Prefer plain text? See
+        <a href="concept_walkthrough.md">concept_walkthrough.md</a>.
+        Tip: the interview questions are collapsible — try answering before you reveal.</p>
+    </header>
+
+    <!-- STAGE 1 -->
+    <section id="stage-1" class="stage">
+      <div class="stage-head"><span class="badge">Stage 01</span><h2>Capture Pipeline</h2></div>
+      <p class="meta"><strong>Files:</strong> <code>main.c</code>, <code>capture.c</code>, <code>capture.h</code>, <code>Makefile</code></p>
+      <p class="goal"><strong>Goal:</strong> open a network interface and run a loop that hands every captured packet to a callback. No decoding yet — just prove the pipeline works.</p>
+
+      <div class="label">Key concepts</div>
+      <ol class="concepts">
+        <li><h4>How libpcap captures traffic</h4><p>libpcap is a userspace library over the OS kernel's packet-capture facility (BPF — the Berkeley Packet Filter — on macOS/BSD; <code>AF_PACKET</code> sockets on Linux). The kernel copies frames off the NIC into a buffer your process reads. This is why capture needs <strong>root</strong>: you're reading raw link-layer traffic, not a normal per-process socket.</p></li>
+        <li><h4><code>pcap_open_live()</code> — the four knobs</h4>
+          <ul class="sub">
+            <li><strong>snaplen</strong> — max bytes to copy per packet. We use <code>65535</code> (whole frame). A smaller value (e.g. 96) captures only headers — faster, less memory, but you lose payload.</li>
+            <li><strong>promisc</strong> — promiscuous mode. <code>1</code> tells the NIC to deliver <em>all</em> frames on the wire, not just those addressed to our MAC. (On switched/Wi-Fi networks you still only see what reaches your port, but it's the right flag to set.)</li>
+            <li><strong>to_ms</strong> — read timeout. The kernel may batch packets for up to this many ms before waking us, trading a little latency for far fewer syscalls (throughput).</li>
+            <li><strong>errbuf</strong> — caller-provided <code>char[PCAP_ERRBUF_SIZE]</code> where pcap writes a human-readable error string. A recurring libpcap idiom.</li>
+          </ul></li>
+        <li><h4>The callback model: <code>pcap_loop()</code></h4><p><code>pcap_loop(handle, -1, packet_handler, user)</code> blocks and calls <code>packet_handler</code> once per packet. <code>-1</code> means "run forever." This is an <strong>inversion of control</strong> / event-loop pattern — we register a handler and pcap drives it. The handler gets pcap metadata (<code>struct pcap_pkthdr</code>: timestamp, <code>caplen</code>, <code>len</code>) plus a pointer to the raw bytes.</p></li>
+        <li><h4><code>caplen</code> vs <code>len</code></h4><p><code>len</code> is the frame's real on-wire length; <code>caplen</code> is how many bytes were actually captured (≤ snaplen). <strong>Always parse against <code>caplen</code></strong> — that's the memory you actually have.</p></li>
+        <li><h4>Clean shutdown: SIGINT + <code>pcap_breakloop()</code></h4><p>Ctrl+C raises <code>SIGINT</code>. A signal handler runs at an arbitrary point, so it may only call <strong>async-signal-safe</strong> functions. <code>pcap_breakloop()</code> is safe and simply makes the blocked <code>pcap_loop()</code> return — so all the real cleanup (printing the summary, <code>pcap_close()</code>) happens back in normal code, not in the handler. Doing <code>printf</code>/<code>free</code> directly in a signal handler is a classic bug.</p></li>
+        <li><h4>Portability — <code>pcap_findalldevs()</code> not <code>pcap_lookupdev()</code></h4><p>The spec suggests <code>pcap_lookupdev()</code>, which is <strong>deprecated</strong> (and returns a pointer to a static buffer — not thread-safe). <code>pcap_findalldevs()</code> is the modern API: it returns a linked list of interfaces we walk to pick a live, non-loopback one, then free with <code>pcap_freealldevs()</code>.</p></li>
+      </ol>
+
+      <div class="label">Likely interview questions</div>
+      <p class="quiz-hint">Click to reveal the answer — try answering first.</p>
+      <div class="interview">
+        <details><summary>Why does packet capture require root?</summary><div class="ans">You're reading raw link-layer frames via a kernel facility (BPF), which bypasses normal per-process socket isolation.</div></details>
+        <details><summary>What's promiscuous mode?</summary><div class="ans">The NIC delivers all frames on the segment, not just ones addressed to our MAC.</div></details>
+        <details><summary>Why not call <code>printf</code> in a signal handler?</summary><div class="ans">It's not async-signal-safe; re-entering stdio mid-write can deadlock/corrupt. Set a flag or call a safe function (<code>pcap_breakloop</code>) and do real work in the main flow.</div></details>
+        <details><summary>Difference between <code>caplen</code> and <code>len</code>?</summary><div class="ans">Captured vs. true length; parse against <code>caplen</code> to stay in-bounds.</div></details>
+      </div>
+    </section>
+
+    <!-- STAGE 2 -->
+    <section id="stage-2" class="stage">
+      <div class="stage-head"><span class="badge">Stage 02</span><h2>Ethernet Frame Parsing (Layer 2)</h2></div>
+      <p class="meta"><strong>Files:</strong> <code>ethernet.c</code>, <code>ethernet.h</code>, <code>display.c</code>, <code>display.h</code> (+ wired into <code>capture.c</code>)</p>
+      <p class="goal"><strong>Goal:</strong> decode the 14-byte Ethernet header — source/dest MAC and EtherType.</p>
+
+      <div class="label">Key concepts</div>
+      <ol class="concepts">
+        <li><h4>The pointer cast — <code>(const ethernet_header_t *)packet</code></h4><p>libpcap gives us a flat <code>const uint8_t *</code>. Casting it to a struct pointer tells the compiler "interpret these bytes with this layout," so <code>raw-&gt;src_mac</code> <em>is</em> bytes 6–11. <strong>This works only because the struct has no padding:</strong> 6 + 6 + 2 = 14 bytes, every field on an even offset, widest member <code>uint16_t</code> (2-byte alignment), so the compiler inserts nothing. If padding crept in, <code>raw-&gt;ethertype</code> would read the wrong bytes. The #1 thing interviewers probe about struct-overlay parsing.</p></li>
+        <li><h4>Network byte order and <code>ntohs()</code></h4><p>Network protocols standardized on <strong>big-endian</strong> ("network byte order") so hosts of differing native endianness interoperate. EtherType <code>0x0800</code> arrives as bytes <code>08 00</code>. A little-endian machine (your ARM Mac) reading those raw gets <code>0x0008</code> — wrong. <code>ntohs()</code> ("network-to-host short") swaps them. There's also <code>ntohl()</code> for 32-bit, and <code>htons()/htonl()</code> for the reverse.</p></li>
+        <li><h4>Why MAC addresses are NOT byte-swapped</h4><p>A MAC is a 6-byte <em>array</em>, not a multi-byte integer — there's no numeric "order" to reverse. We <code>memcpy</code> the bytes verbatim. Only multi-byte <em>numeric</em> fields (EtherType, lengths, ports, addresses-as-integers) get <code>ntoh*</code>. Mixing this up is a common bug.</p></li>
+        <li><h4>Separation of concerns: parse vs. display</h4><p><code>ethernet.c</code> only fills a struct (and normalizes byte order); <code>display.c</code> formats it for humans. This keeps parsing pure and testable, and later layers follow the same <code>parse_* → print_*</code> shape. <code>format_mac()</code> takes a caller-supplied buffer so it's <strong>reentrant</strong> — one log line formats two MACs, so a shared static buffer would clobber itself.</p></li>
+        <li><h4>Defensive bounds check, first</h4><p>The handler rejects frames shorter than <code>ETHERNET_HEADER_LEN</code> (14) <em>before</em> the cast. A runt/truncated frame would otherwise make the cast read past the buffer — undefined behavior, and exactly what AddressSanitizer flags. Real parsers validate length before every dereference.</p></li>
+        <li><h4>Link-type guard — <code>pcap_datalink()</code></h4><p>The parser assumes Ethernet II (<code>DLT_EN10MB</code>), where every frame opens with the 14-byte header. Loopback (<code>DLT_NULL</code>) and raw 802.11 use <em>different</em> framing, so we reject anything else instead of emitting garbage. Checking the link type is what separates a real tool from a demo.</p></li>
+      </ol>
+
+      <div class="label">Reading the output</div>
+      <pre><span class="bar"><i></i><i></i><i></i></span><code>[ETH] ac:de:48:00:11:22 -&gt; ff:ff:ff:ff:ff:ff | Type: IPv4 (0x0800)</code></pre>
+      <ul class="note-list">
+        <li><code>ff:ff:ff:ff:ff:ff</code> destination = <strong>broadcast</strong> (e.g. ARP "who has this IP?").</li>
+        <li><code>33:33:...</code> destination = <strong>IPv6 multicast</strong>.</li>
+        <li><code>01:00:5e:...</code> = IPv4 multicast. Normal unicast is the NIC's burned-in MAC.</li>
+      </ul>
+
+      <div class="label">Likely interview questions</div>
+      <div class="interview">
+        <details><summary>Why is the struct cast safe here but risky in general?</summary><div class="ans">Layout matches the wire only when there's no padding; you must verify offsets/alignment (or use a packed struct / <code>memcpy</code> field-by-field).</div></details>
+        <details><summary>When do you apply <code>ntohs</code>/<code>ntohl</code> and when not?</summary><div class="ans">Only on multi-byte numeric fields; never on byte arrays like MACs.</div></details>
+        <details><summary>What's an EtherType?</summary><div class="ans">A 2-byte field at offset 12 naming the upper-layer protocol (0x0800 IPv4, 0x86DD IPv6, 0x0806 ARP) — it's how you know what to parse next.</div></details>
+        <details><summary>How would you detect/handle a malformed packet?</summary><div class="ans">Bounds-check <code>caplen</code> against each header size before parsing; ASan/Valgrind to catch overruns.</div></details>
+      </div>
+    </section>
+
+    <!-- STAGE 3 -->
+    <section id="stage-3" class="stage">
+      <div class="stage-head"><span class="badge">Stage 03</span><h2>IPv4 Parsing (Layer 3)</h2></div>
+      <p class="meta"><strong>Files:</strong> <code>ip.c</code>, <code>ip.h</code> (+ <code>print_ip</code> in <code>display.c</code>, dispatch in <code>capture.c</code>)</p>
+      <p class="goal"><strong>Goal:</strong> decode the IPv4 header — addresses, protocol, TTL, length — but only for frames whose EtherType is IPv4.</p>
+
+      <div class="label">Key concepts</div>
+      <ol class="concepts">
+        <li><h4>Bit masking a packed byte (<code>version_ihl</code>)</h4><p>Byte 0 packs two 4-bit fields into 8 bits: <code>version_ihl &gt;&gt; 4</code> → high nibble → IP version (should be 4); <code>version_ihl &amp; 0x0F</code> → low nibble → IHL. This is the "bit masking for flags and fields" the Cisco JD calls out, and it recurs constantly in protocol parsing.</p></li>
+        <li><h4>Why IHL exists and the <code>× 4</code></h4><p>IP headers are normally 20 bytes but can carry options up to 60. Instead of spending a whole byte on a length, the designers stored a count of <strong>32-bit words</strong>, so IHL=5 means 5 × 4 = 20 bytes. You must multiply by 4, and you need this to locate Layer 4: <code>packet + 14 + get_ip_header_length(ip)</code>.</p></li>
+        <li><h4><code>memcpy</code> instead of a cast — the alignment fix</h4><p>The IP header starts at <code>packet + 14</code>, which is <strong>not</strong> 4-byte aligned, and the struct has <code>uint32_t</code> address fields requiring 4-byte alignment. Casting and dereferencing a misaligned pointer is <strong>undefined behavior</strong> (UBSan flags it; some CPUs fault). <code>memcpy</code> reads bytes safely regardless of alignment into a properly-aligned local struct. Ethernet could cast because nothing was wider than 2 bytes and it sat at offset 0; IP cannot. <strong>Knowing why Stage 2 casts but Stage 3 copies is a strong interview signal.</strong></p></li>
+        <li><h4><code>inet_ntop()</code> over <code>inet_ntoa()</code></h4><p>Both render a 32-bit address as a dotted string. <code>inet_ntoa()</code> returns a pointer to a <strong>shared static buffer</strong>, so two calls in one <code>printf</code> clobber each other. <code>inet_ntop()</code> writes into a caller buffer, is thread-safe, and supports IPv6. It expects the address in <strong>network byte order</strong> — which is exactly why <code>parse_ip</code> leaves <code>src_ip</code>/<code>dest_ip</code> unswapped while converting the other numeric fields with <code>ntohs</code>.</p></li>
+        <li><h4>TTL (Time To Live)</h4><p>Each router that forwards a packet decrements TTL by 1; at 0 the packet is dropped and an ICMP "time exceeded" is returned. Prevents routing loops and is the mechanism behind <code>traceroute</code>. Typical initial values: 64 (Linux/macOS), 128 (Windows).</p></li>
+      </ol>
+
+      <div class="label">Likely interview questions</div>
+      <div class="interview">
+        <details><summary>How do you extract version and header length from one byte?</summary><div class="ans">High/low nibble via <code>&gt;&gt; 4</code> and <code>&amp; 0x0F</code>; IHL is in 32-bit words so ×4 for bytes.</div></details>
+        <details><summary>Why memcpy the IP header instead of casting like Ethernet?</summary><div class="ans">Alignment: uint32_t fields at a non-4-aligned offset → casting is UB; memcpy is safe.</div></details>
+        <details><summary>Why <code>inet_ntop</code> over <code>inet_ntoa</code>?</summary><div class="ans">Reentrancy/thread-safety (no shared static buffer) and IPv6 support; needs network-order input.</div></details>
+        <details><summary>What does TTL do and how does traceroute exploit it?</summary><div class="ans">Loop prevention via per-hop decrement; traceroute sends increasing TTLs to map each hop.</div></details>
+        <details><summary>How do you find where the TCP/UDP header starts?</summary><div class="ans"><code>14 (Ethernet) + IHL×4</code>, not a fixed 34, because of IP options.</div></details>
+      </div>
+    </section>
+
+    <!-- STAGE 4 -->
+    <section id="stage-4" class="stage">
+      <div class="stage-head"><span class="badge">Stage 04</span><h2>Transport Parsing (Layer 4)</h2></div>
+      <p class="meta"><strong>Files:</strong> <code>transport.c</code>, <code>transport.h</code> (+ <code>print_tcp/udp/icmp</code> in <code>display.c</code>, protocol dispatch in <code>capture.c</code>)</p>
+      <p class="goal"><strong>Goal:</strong> decode TCP, UDP, and ICMP — ports, sequence numbers, TCP flags, ICMP types. Completes the Ethernet → IP → Transport pipeline (milestone checkpoint).</p>
+
+      <div class="label">Key concepts</div>
+      <ol class="concepts">
+        <li><h4>Protocol dispatch — <code>switch (ip.protocol)</code></h4><p>The IP header's <code>protocol</code> byte (6=TCP, 17=UDP, 1=ICMP) selects the parser. Each layer names the next: EtherType did L2→L3, the protocol number does L3→L4. A real network stack is nested dispatch exactly like this.</p></li>
+        <li><h4>Variable offset — <code>14 + IHL×4</code>, never a hardcoded 34</h4><p>The transport header's position depends on the IP header length (options!), so <code>l4_offset = ETHERNET_HEADER_LEN + get_ip_header_length(ip)</code>. Hardcoding 34 is the most common hand-rolled-parser bug: fine until a packet carries IP options, then everything downstream silently misreads. We also reject IHL &lt; 20.</p></li>
+        <li><h4><code>ntohl</code> vs <code>ntohs</code> — operand size matters</h4><p>TCP seq/ack are <strong>32-bit</strong> → <code>ntohl</code>; ports/window/checksum are 16-bit → <code>ntohs</code>. Wrong one = byte-swapped garbage. <code>data_offset</code> and <code>flags</code> are single bytes → no conversion (a 1-byte value has no order).</p></li>
+        <li><h4>Decoding TCP flags with bitwise AND</h4><p>The flags byte packs 6 control bits. <code>flags &amp; TCP_SYN</code> is non-zero iff SYN is set; we loop a mask→name table to build "SYN ACK", etc. These flags are the TCP state machine: SYN (open) → SYN ACK (server reply) → ACK (established); FIN closes gracefully, RST aborts. Watching <code>SYN</code> / <code>SYN ACK</code> / <code>ACK</code> in sequence is the <strong>three-way handshake</strong> live.</p></li>
+        <li><h4><code>data_offset</code> mirrors IHL</h4><p>TCP can carry options (window scaling, SACK, timestamps), so its header is 20–60 bytes, encoded as 32-bit words in the high nibble of <code>data_offset</code>. <code>get_tcp_header_length()</code> (high nibble × 4) is needed to skip past it for the Stage 7 payload-preview stretch goal.</p></li>
+        <li><h4>Defense in depth / memory safety</h4><p>Every transport parse is preceded by a <code>caplen</code> bounds check against that header's size, and <code>parse_*</code> use <code>memcpy</code> (alignment-safe) like the IP parser — the "memory-safe C, validated at every layer" story for the résumé.</p></li>
+      </ol>
+
+      <div class="label">Likely interview questions</div>
+      <div class="interview">
+        <details><summary>How does the sniffer know whether a packet is TCP or UDP?</summary><div class="ans">The IP <code>protocol</code> byte; dispatch on it.</div></details>
+        <details><summary>Where does the TCP header start?</summary><div class="ans">14 + IP header length (IHL×4), not a constant — because IP options vary the length.</div></details>
+        <details><summary>When ntohl vs ntohs?</summary><div class="ans">32-bit fields (seq/ack, IP addrs) use ntohl; 16-bit (ports, lengths) use ntohs; single bytes need neither.</div></details>
+        <details><summary>Walk me through the TCP three-way handshake.</summary><div class="ans">Client SYN → server SYN+ACK → client ACK; visible directly in the flags this tool prints.</div></details>
+        <details><summary>How do you read individual flag bits out of a byte?</summary><div class="ans">Bitwise AND with a single-bit mask per flag.</div></details>
+        <details><summary>What's ICMP used for?</summary><div class="ans">Control/diagnostics (ping = echo request/reply, unreachable, time-exceeded → traceroute), not application data.</div></details>
+      </div>
+    </section>
+
+    <!-- STAGE 5 -->
+    <section id="stage-5" class="stage">
+      <div class="stage-head"><span class="badge">Stage 05</span><h2>Filter Engine</h2></div>
+      <p class="meta"><strong>Files:</strong> <code>filter.c</code>, <code>filter.h</code> (+ <code>parse_args</code> moved out of <code>main.c</code>, handler restructured in <code>capture.c</code>)</p>
+      <p class="goal"><strong>Goal:</strong> <code>--proto</code>, <code>--port</code>, <code>--host</code> flags that drop non-matching packets silently.</p>
+
+      <div class="label">Key concepts</div>
+      <ol class="concepts">
+        <li><h4><code>getopt_long()</code> — parsing <code>--long</code> flags</h4><p><code>getopt</code> handles only single-char flags (<code>-i</code>); <code>getopt_long()</code> adds GNU-style <code>--proto</code>. You provide a <code>struct option[]</code> table mapping each long name to a return code — here <code>--proto/--port/--host</code> → <code>'p'/'P'/'H'</code> so they don't collide with <code>-i</code>/<code>-h</code>. The standard C idiom for CLI parsing.</p></li>
+        <li><h4>The byte-order trap in filtering (the subtle one)</h4><p>A comparison like <code>ip-&gt;src_ip == filter-&gt;filter_ip</code> only works if both sides are in the same byte order. Two consistent conventions: <strong>IP addresses</strong> stay in <strong>network</strong> order (<code>inet_pton</code> writes network order; <code>parse_ip</code> left addresses unswapped); <strong>ports</strong> are in <strong>host</strong> order (<code>parse_tcp/udp</code> already <code>ntohs</code>'d them; <code>--port</code> parsed as a plain int). Mismatching these is the classic "my filter matches nothing" bug.</p></li>
+        <li><h4><code>inet_pton()</code> — inverse of <code>inet_ntop()</code></h4><p>Converts <code>"8.8.8.8"</code> → 4 binary bytes in network order; its return value (1/0/-1) doubles as validation, which is how <code>999.1.1.1</code> is rejected.</p></li>
+        <li><h4><code>strtol</code> over <code>atoi</code> for <code>--port</code></h4><p><code>atoi("99x")</code> silently returns 99; <code>strtol</code> gives an <code>endptr</code> to confirm the whole token was numeric, plus range-check 1–65535. Proper untrusted-input validation.</p></li>
+        <li><h4>parse → filter → print (control-flow restructure)</h4><p>The doc requires filtering before display, so the handler now parses all layers into locals, calls <code>packet_matches_filter()</code>, then prints only on a match. The filter receives <code>tcp_p</code>/<code>udp_p</code> (NULL for the wrong protocol) so a port filter on a portless packet (ICMP) correctly fails to match.</p></li>
+        <li><h4>libpcap's user pointer instead of another global</h4><p>The filter is passed as <code>pcap_loop</code>'s 4th argument; pcap hands it back to the callback as <code>user</code>. Cleaner than global state — using the API's intended context mechanism.</p></li>
+      </ol>
+
+      <div class="label">Likely interview questions</div>
+      <div class="interview">
+        <details><summary>How do you parse long command-line options in C?</summary><div class="ans"><code>getopt_long</code> with a <code>struct option</code> table.</div></details>
+        <details><summary>Why might an IP filter silently match nothing?</summary><div class="ans">Byte-order mismatch between the stored address and the comparison value.</div></details>
+        <details><summary>Difference between <code>inet_pton</code>/<code>inet_ntop</code> and the older <code>inet_addr</code>/<code>inet_ntoa</code>?</summary><div class="ans">pton/ntop are IPv6-capable, reentrant, and validate input.</div></details>
+        <details><summary>Why <code>strtol</code> instead of <code>atoi</code>?</summary><div class="ans">Error detection + range validation of the full token.</div></details>
+        <details><summary>How do you pass per-capture context into a libpcap callback?</summary><div class="ans">The <code>user</code> pointer argument of <code>pcap_loop</code>/<code>pcap_dispatch</code>.</div></details>
+      </div>
+    </section>
+
+    <!-- STAGE 6 -->
+    <section id="stage-6" class="stage">
+      <div class="stage-head"><span class="badge">Stage 06</span><h2>Live Statistics</h2></div>
+      <p class="meta"><strong>Files:</strong> <code>stats.c</code>, <code>stats.h</code> (+ <code>capture_context_t</code> and post-loop summary in <code>capture.c</code>, <code>setlocale</code> in <code>main.c</code>)</p>
+      <p class="goal"><strong>Goal:</strong> per-protocol counts, total bytes, top-5 source IPs, summary on Ctrl+C.</p>
+
+      <div class="label">Key concepts</div>
+      <ol class="concepts">
+        <li><h4>The signal-safety payoff (headline)</h4><p><code>printf</code>/<code>malloc</code>/<code>qsort</code> are not async-signal-safe; calling them from a signal handler can deadlock or corrupt. So the SIGINT handler still only calls <code>pcap_breakloop()</code>. That returns control to <code>start_capture</code>, where the summary (printf, qsort, floating point) prints in <strong>normal flow</strong>. A deliberate, correct <strong>deviation from the project doc</strong>, which said to print from the handler. Articulating "the doc's approach is unsafe; here's why and the fix" is strong senior-leaning judgment.</p></li>
+        <li><h4>Threading context without globals</h4><p>The callback needs both the filter and the stats. Instead of more file-scope globals, they're bundled into <code>capture_context_t</code> and passed via pcap's <code>user</code> pointer. Stats are a <strong>local in <code>start_capture</code></strong>, so they outlive the loop and are still in scope to print afterward.</p></li>
+        <li><h4><code>uint64_t</code> counters — overflow awareness</h4><p>A busy link pushes millions of packets/bytes; 32-bit byte counters wrap at ~4 GB in minutes. 64-bit won't realistically overflow. Sizing integers to expected magnitude is a systems instinct.</p></li>
+        <li><h4>Top-talkers algorithm + honest trade-off</h4><p>Recording is a linear scan of the IP table (O(n) per packet) — fine for a CLI on a home link; a high-throughput collector would use a hash map. The comment names the limitation rather than hiding it. Top-5 copies into a local array and <code>qsort</code>s descending, on a copy so <code>const</code> stats aren't mutated.</p></li>
+        <li><h4><code>qsort</code> comparator correctness</h4><p>Compares <code>uint64_t</code> byte counts via explicit <code>&gt;</code>/<code>&lt;</code>, NOT <code>(int)(y - x)</code> — subtracting two <code>uint64_t</code> and truncating to <code>int</code> can overflow and flip the sign, silently corrupting the sort. A classic subtle bug.</p></li>
+        <li><h4>Human-readable formatting</h4><p><code>format_bytes</code> divides by 1024 up the unit ladder (B→KB→MB…); <code>%'llu</code> groups thousands using the locale (<code>setlocale(LC_ALL, "")</code> in <code>main</code>). Makes demo output look professional.</p></li>
+      </ol>
+
+      <div class="label">Likely interview questions</div>
+      <div class="interview">
+        <details><summary>Why not print your summary in the signal handler?</summary><div class="ans">Not async-signal-safe; set a flag / break the loop and print in normal context.</div></details>
+        <details><summary>How did you get data into the pcap callback without globals?</summary><div class="ans">The <code>user</code> pointer carrying a context struct.</div></details>
+        <details><summary>Why 64-bit counters?</summary><div class="ans">Avoid overflow on high-volume captures.</div></details>
+        <details><summary>What's wrong with <code>return a - b;</code> in a qsort comparator on unsigned/large values?</summary><div class="ans">Integer overflow/truncation flips ordering; compare explicitly.</div></details>
+        <details><summary>What's the complexity of your top-talkers tracking and how would you scale it?</summary><div class="ans">O(n) linear scan; a hash map (IP→bytes) for high throughput.</div></details>
+      </div>
+    </section>
+
+    <!-- STAGE 7 -->
+    <section id="stage-7" class="stage">
+      <div class="stage-head"><span class="badge">Stage 07</span><h2>Polish &amp; Presentation</h2></div>
+      <p class="meta"><strong>Files:</strong> <code>README.md</code>, this doc, <code>config</code>-style refactor in <code>filter.h</code>/<code>main.c</code>, plus all three stretch goals wired through <code>capture.c</code>/<code>display.c</code>.</p>
+      <p class="goal"><strong>Goal:</strong> make the repo something a Cisco engineer wants to read, and add the optional-but-impressive features.</p>
+
+      <div class="label">Key concepts</div>
+      <ol class="concepts">
+        <li><h4>BPF passthrough — in-kernel filtering (<code>--bpf</code>)</h4><p><code>pcap_compile()</code> turns a text expression like <code>"tcp and port 80"</code> into BPF bytecode; <code>pcap_setfilter()</code> installs it. The filter then runs <strong>in the kernel</strong>, so non-matching packets are dropped <em>before</em> being copied to userspace — far more efficient than our userspace filter, and how production tools (tcpdump, Wireshark) work. We <code>pcap_freecode()</code> the program after installing (libpcap copies it in). It composes with our own <code>--proto/--port/--host</code> filter.</p></li>
+        <li><h4>Writing a <code>.pcap</code> file (<code>--write</code>)</h4><p><code>pcap_dump_open()</code> returns a <code>pcap_dumper_t</code> savefile handle; <code>pcap_dump()</code> appends each packet's original bytes plus its capture timestamp in the standard pcap format, which Wireshark/tcpdump can reopen. <code>pcap_dump_close()</code> flushes on exit. This closes the loop between a from-scratch tool and the industry standard.</p></li>
+        <li><h4>Hex + ASCII payload preview (<code>--hex</code>)</h4><p>Classic hexdump layout: a fixed-width hex column (padded so rows align) beside a printable-ASCII column (bytes outside 32–126 shown as <code>.</code>). The payload offset is <code>14 + IP header + transport header</code> — and the transport header length is itself variable for TCP (<code>data_offset</code>), which is why <code>get_tcp_header_length()</code> from Stage 4 matters here.</p></li>
+        <li><h4>Memory-safety verification (the macOS reality)</h4><p>The brief says run Valgrind, but Valgrind is unreliable on Apple Silicon. The equivalent story: build with <code>make debug</code> (AddressSanitizer — compile-time instrumentation that catches overflows/use-after-free at runtime) and use Apple's <code>leaks</code> tool. Being able to say "I used ASan and <code>leaks</code> because Valgrind isn't viable on arm64 macOS" shows real platform fluency.</p></li>
+        <li><h4>A config struct instead of growing the filter struct</h4><p>The new options (<code>--bpf/--hex/--write</code>) aren't filter criteria, so they went into a separate <code>app_config_t</code> that bundles device + filter + options. Keeping <code>filter_config_t</code> focused on matching is a small design-hygiene call worth being able to justify.</p></li>
+        <li><h4>Honest git history</h4><p>Because git was deferred to the end, the commits all carry one date and can't honestly portray the real multi-session timeline; a fabricated per-stage log would also contain non-compiling intermediate states. So the repo uses a clean, coherent commit structure, and <em>this</em> document carries the real progression. Lesson for next time: commit per stage from day one.</p></li>
+      </ol>
+
+      <div class="label">Likely interview questions</div>
+      <div class="interview">
+        <details><summary>What's the difference between a BPF/kernel filter and filtering in your own code?</summary><div class="ans">BPF drops packets in-kernel before the userspace copy — less overhead; userspace filtering is more flexible but sees every packet.</div></details>
+        <details><summary>How would you save captures for later analysis?</summary><div class="ans"><code>pcap_dump_*</code> to a <code>.pcap</code> file that Wireshark reads.</div></details>
+        <details><summary>How did you check for memory bugs?</summary><div class="ans">AddressSanitizer build + <code>leaks</code> (Valgrind isn't viable on arm64 macOS); bounds checks at every layer.</div></details>
+        <details><summary>Why a separate config struct?</summary><div class="ans">Separation of concerns — options aren't filter criteria.</div></details>
+      </div>
+    </section>
+
+    <!-- FIELD NOTES -->
+    <section id="field-notes" class="stage">
+      <div class="stage-head"><span class="badge field">Field Notes</span><h2>Why Traffic May Not Be Visible</h2></div>
+      <div class="callout">Surfaced while testing the Stage 5 <code>--proto udp --port 53</code> filter: a DNS lookup with <code>dig @8.8.8.8 cisco.com</code> appeared, but <code>nslookup github.com</code> and plain <code>dig github.com</code> produced nothing. The sniffer wasn't broken — it captured exactly what crossed the interface it was bound to.</div>
+
+      <div class="callout core"><strong>The core rule: a sniffer only sees the one interface it is bound to.</strong> <code>pcap_open_live(device, ...)</code> attaches to a single interface (e.g. <code>en0</code>). Any traffic over a <em>different</em> interface is completely invisible to that capture. The first thing to check when "expected" traffic doesn't show up.</div>
+
+      <div class="label">Common reasons captured traffic may be missing</div>
+      <ol class="note-list">
+        <li><strong>Wrong interface / traffic on another interface.</strong> The classic case is a <strong>VPN</strong>: tunnel interfaces (<code>utun0</code>, <code>tun0</code>, <code>ppp0</code>, …) carry traffic <em>inside</em> an encrypted tunnel, so it never appears as plaintext on the physical NIC. If DNS uses the system resolver reached through the VPN, queries ride <code>utunN</code>, not <code>en0</code>. (Meanwhile a query forced to a split-tunneled destination like <code>8.8.8.8</code> may still ride <code>en0</code> and be visible — exactly the asymmetry observed.)</li>
+        <li><strong>Caching — the packet is never sent.</strong> A cached DNS answer produces no network traffic at all. Force a fresh request (a random subdomain, or query a server directly) to guarantee a packet.</li>
+        <li><strong>Encrypted / alternative transport.</strong> DNS-over-HTTPS (DoH) and DNS-over-TLS (DoT) send lookups as TCP:443 / TCP:853, so a <code>udp port 53</code> filter sees nothing even though DNS is happening. Traffic may use a different protocol/port than assumed.</li>
+        <li><strong>Switched networks limit promiscuous mode.</strong> On a switched LAN or Wi-Fi, a switch/AP only forwards frames destined for your host (plus broadcast/multicast), so promiscuous mode still won't reveal <em>other</em> hosts' unicast traffic. To see everything you'd need a SPAN/mirror port or a hub.</li>
+        <li><strong>Link type / offload quirks.</strong> Capturing on the wrong DLT (loopback, raw Wi-Fi) yields different framing; NIC offloads (checksum/segmentation) can make locally-generated packets look unusual.</li>
+      </ol>
+
+      <div class="label">Diagnostic commands (macOS)</div>
+      <pre><span class="bar"><i></i><i></i><i></i></span><code><span class="k">scutil</span> --dns | grep -E 'nameserver|if_index'   <span class="c"># which resolver, which interface</span>
+<span class="k">ifconfig</span> | grep -A3 utun                        <span class="c"># is a VPN tunnel active?</span></code></pre>
+
+      <div class="callout core"><strong>Interview takeaway:</strong> "A sniffer only sees the interface it's bound to, and modern DNS often isn't plaintext UDP:53." Reasoning about <em>where</em> traffic flows (interface, tunnel, cache, transport) — not just how to parse it — is exactly the network-fluency a systems/networking role wants.</div>
+
+      <div class="sub-note">
+        <h3>Build gotcha — <code>make</code> rebuilds by timestamp, not by flags</h3>
+        <p>Surfaced during verification: after <code>make debug</code> (AddressSanitizer build), running plain <code>make</code> reported <code>'sniffer' is up to date</code> and did <strong>not</strong> rebuild — so the on-disk binary was still the debug/ASan build. <code>make</code> decides whether to rebuild by comparing the <strong>target file's timestamp</strong> against its prerequisites; it has no idea the <em>compiler flags</em> changed. Because the release and debug recipes originally wrote to the <strong>same output name</strong>, switching between them silently ran the wrong binary.</p>
+        <p>Two lessons: (1) <code>make clean</code> when switching build types that share an output; (2) better, give each build its own output name so they can't clobber each other (the Makefile now builds <code>sniffer</code> vs <code>sniffer-debug</code>). This is also why incremental builds are fast — make only recompiles what's stale by mtime.</p>
+      </div>
+
+      <div class="sub-note">
+        <h3>Note on AddressSanitizer + bleeding-edge macOS</h3>
+        <p>The ASan (<code>make debug</code>) binary hangs inside ASan's <em>runtime initialization</em> (<code>AddressSanitizer: libc interceptors initialized</code>, then stuck) on macOS 26.x — before <code>main()</code> runs. This is an ASan-runtime/OS incompatibility, not a code bug. Memory safety was therefore validated via the <code>leaks</code> tool (zero leaks), the warning-free build, bounds-checks at every layer, and an allocation-free parsing path — an honest substitute when one tool isn't available on the platform.</p>
+      </div>
+    </section>
+
+    <footer>
+      <p>Companion to the <a href="README.md">packet sniffer</a> project · plain-text version:
+        <a href="concept_walkthrough.md">concept_walkthrough.md</a> · source in <code>src/</code>.</p>
+    </footer>
+  </main>
+</div>
+
+<a href="#top" class="totop" id="toTop" aria-label="Back to top">↑</a>
+
+<script>
+  // reading progress
+  var bar = document.getElementById('progress');
+  var toTop = document.getElementById('toTop');
+  function onScroll(){
+    var h = document.documentElement;
+    var scrolled = h.scrollTop / (h.scrollHeight - h.clientHeight);
+    bar.style.width = (scrolled * 100) + '%';
+    toTop.classList.toggle('show', h.scrollTop > 600);
+  }
+  document.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  // scroll-spy: highlight the section currently in view
+  var links = Array.prototype.slice.call(document.querySelectorAll('#toc a'));
+  var map = {};
+  links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+  var sections = links.map(function(a){ return document.getElementById(a.getAttribute('href').slice(1)); }).filter(Boolean);
+  var spy = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(l){ l.classList.remove('active'); });
+        if(map[e.target.id]) map[e.target.id].classList.add('active');
+      }
+    });
+  }, {rootMargin:'-15% 0px -75% 0px', threshold:0});
+  sections.forEach(function(s){ spy.observe(s); });
+</script>
+</body>
+</html>

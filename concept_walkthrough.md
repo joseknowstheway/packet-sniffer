@@ -10,16 +10,20 @@
 
 ---
 
+> **Prefer a nicer read?** An aesthetic, interactive HTML version of this
+> document is available at [`concept_walkthrough.html`](concept_walkthrough.html)
+> (open it in a browser).
+
 ## Table of Contents
 
 - [Stage 1 — Capture Pipeline](#stage-1--capture-pipeline)
 - [Stage 2 — Ethernet Frame Parsing (Layer 2)](#stage-2--ethernet-frame-parsing-layer-2)
-- [Stage 3 — IPv4 Parsing (Layer 3)](#stage-3--ipv4-parsing-layer-3) *(pending)*
-- [Stage 4 — Transport Parsing (Layer 4)](#stage-4--transport-parsing-layer-4) *(pending)*
-- [Stage 5 — Filter Engine](#stage-5--filter-engine) *(pending)*
-- [Stage 6 — Live Statistics](#stage-6--live-statistics) *(pending)*
-- [Stage 7 — Polish & Presentation](#stage-7--polish--presentation) *(pending)*
+- [Stage 3 — IPv4 Parsing (Layer 3)](#stage-3--ipv4-parsing-layer-3)
+- [Stage 4 — Transport Parsing (Layer 4)](#stage-4--transport-parsing-layer-4)
+- [Stage 5 — Filter Engine](#stage-5--filter-engine)
 - [Field Notes — Why Traffic May Not Be Visible](#field-notes--why-traffic-may-not-be-visible)
+- [Stage 6 — Live Statistics](#stage-6--live-statistics)
+- [Stage 7 — Polish & Presentation](#stage-7--polish--presentation)
 
 ---
 

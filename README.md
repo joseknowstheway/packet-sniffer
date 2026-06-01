@@ -116,7 +116,11 @@ when a bounds check confirms the bytes are present.
 
 A deeper, stage-by-stage explanation of the concepts (network byte order,
 struct-overlay parsing, alignment, bit masking, signal safety, and more) lives
-in [`concept_walkthrough.md`](concept_walkthrough.md).
+in [`concept_walkthrough.md`](concept_walkthrough.md) — or, for a nicer read,
+the aesthetic, interactive HTML version at
+[`concept_walkthrough.html`](concept_walkthrough.html) (a styled, self-contained
+page with a navigation sidebar, reading-progress bar, and click-to-reveal
+interview questions; open it in a browser, or serve it via GitHub Pages).
 
 ---
 
