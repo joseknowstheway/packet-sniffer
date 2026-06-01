@@ -1,0 +1,11 @@
+# Build output
+sniffer
+*.o
+*.dSYM/
+
+# Captured traffic dumps (Stage 7 stretch goal)
+*.pcap
+
+# Editor / OS cruft
+.DS_Store
+.vscode/
