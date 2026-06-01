@@ -9,6 +9,13 @@ I built this to go deep on the fundamentals that systems and networking roles
 care about: raw packet capture, manual header parsing at the byte level, network
 byte order, bit manipulation, the OSI model, and memory-safe C.
 
+## Demo
+
+Live capture of HTTPS traffic, decoded layer by layer with a hex payload preview,
+ending in the on-exit statistics summary:
+
+![Live capture demo](demo.gif)
+
 ```
 [ETH] ac:de:48:00:11:22 -> 3c:22:fb:aa:bb:cc | Type: IPv4 (0x0800)
 [IP]  192.168.1.185 -> 142.250.80.46 | Proto: TCP | TTL: 64 | Len: 60
