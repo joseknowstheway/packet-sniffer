@@ -26,7 +26,9 @@ byte order, bit manipulation, the OSI model, and memory-safe C.
 - **`.pcap` capture file output** (`--write`) that opens in Wireshark/tcpdump.
 - **Live statistics** on exit: per-protocol breakdown, total bytes, and top
   source IPs by traffic volume.
-- **Memory-safe**: bounds-checked at every layer; clean under AddressSanitizer.
+- **Memory-safe**: bounds-checked at every layer; **zero leaks** (verified with
+  `leaks`); warning-free `-Wall -Wextra` build; allocation-free, stack-based
+  parsing path.
 
 ---
 

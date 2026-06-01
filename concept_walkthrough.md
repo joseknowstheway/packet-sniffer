@@ -395,6 +395,31 @@ modern DNS often isn't plaintext UDP:53." Being able to reason about *where*
 traffic flows (interface, tunnel, cache, transport) — not just how to parse it —
 is exactly the network-fluency a systems/networking role wants.
 
+### Build gotcha — `make` rebuilds by timestamp, not by flags
+
+Surfaced during verification: after `make debug` (AddressSanitizer build),
+running plain `make` reported `'sniffer' is up to date` and did **not** rebuild —
+so the on-disk binary was still the debug/ASan build. `make` decides whether to
+rebuild by comparing the **target file's timestamp** against its prerequisites;
+it has no idea the *compiler flags* changed. Because the release and debug
+recipes originally wrote to the **same output name**, switching between them
+silently ran the wrong binary.
+
+Two lessons: (1) `make clean` when switching build types that share an output;
+(2) better, give each build its own output name so they can't clobber each other
+(the Makefile now builds `sniffer` vs `sniffer-debug`). This is also why
+incremental builds are fast — make only recompiles what's stale by mtime.
+
+### Note on AddressSanitizer + bleeding-edge macOS
+
+The ASan (`make debug`) binary hangs inside ASan's *runtime initialization*
+(`AddressSanitizer: libc interceptors initialized`, then stuck) on macOS 26.x —
+before `main()` runs. This is an ASan-runtime/OS incompatibility, not a code
+bug. Memory safety was therefore validated via the `leaks` tool (zero leaks),
+the warning-free build, bounds-checks at every layer, and an allocation-free
+parsing path — an honest substitute when one tool isn't available on the
+platform.
+
 ---
 
 ## Stage 6 — Live Statistics

@@ -1,5 +1,6 @@
 # Build output
 sniffer
+sniffer-debug
 *.o
 *.dSYM/
 
